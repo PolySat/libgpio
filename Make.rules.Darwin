@@ -1,0 +1,5 @@
+#CC=arm-linux-gcc
+SO_EXT=dylib
+SO_CFLAGS=
+SO_LDFLAGS=-dynamiclib -current_version $(MAJOR_VERS).$(MINOR_VERS)
+CFLAGS+=-DNOCRYPTO

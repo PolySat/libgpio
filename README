@@ -1,0 +1,120 @@
+GPIOAPI
+
+NAME
+
+   initGPIO - Initialize a GPIO pin
+   setGPIO  - Set a GPIO pin
+   readGPIO - Read from a GPIO pin
+   freeGPIO - Release a previously initialized GPIO pin
+ 
+SYNOPSIS
+
+   #include <gpioapi.h> // once lib is created.
+
+   int initGPIO(int chip, int pin, gpio *node);
+   int setGPIO(gpio *node, int direction, int value);
+   int readGPIO(gpio *node);
+   int freeGPIO(gpio *node);
+
+DESCRIPTION
+
+   initGPIO() initializes a GPIO pin to be used. 'chip' specifies which GPIO
+   device to use and 'pin' specifies the pin number. Currently, the only
+   predefined devices are PIO_A, PIO_B, PIO_C, and EXPANDER. If 'chip' is equal
+   to any of these, then 'pin' is taken to be a relative pin number on that
+   device. Use 0 if 'pin' is used as an absolute GPIO number, but any value for
+   'chip' that is not equal to one of the predefined devices will result in
+   'pin' being interpreted as an absolute GPIO number. gpio is a struct defined
+   in gpioapi.h and 'node' is a return parameter which holds information for
+   the GPIO initialized and is to be used in the other GPIO functions.
+
+   setGPIO() sets the direction of the node specified in 'node'. 'node' should
+   be a previously initialized GPIO, usually using initGPIO(). 'direction'
+   should be either IN or OUT which are predefined macro values in gpioapi.h.
+   If 'direction' was set as IN, then 'value' is ignored. Otherwise, if 
+   'direction' is OUT then a 0 for 'value' will set the GPIO to output low.
+   Any value greater than 0 is an output high and any value less than 0 is an
+   error.
+
+   readGPIO() reads the current value of the GPIO 'node'. This will equal
+              the ASCII representation of a 0 or 1. 0 is low and 1 is high.
+
+   freeGPIO() releases the GPIO 'node' that was previously initialized.
+
+RETURN VALUE
+
+   On error, an error code is returned and on success, 0 is returned.
+
+ERRORS
+   
+   EINVALPIN The 'pin' specified is out of range of the available pins on 
+             'chip'.
+
+   ESYSCALLFAIL A system call used in these functions failed.
+
+   EGPIONOINIT The 'node' specified has not been initialized.
+
+   EINVALPARAM A parameter that should match a predefined macro does not
+               match any.
+
+   EGPIONA The GPIO specified could not be initialized. This may occur if
+           it has already been initialized for use in user-space or if it
+	   is already being used.
+
+NOTES
+
+   Here is some sample code on how to initialize the first pin on the GPIO
+   expander. Set it to output high then output low. Then set it as an input
+   and read from it once per second for 10 seconds and print the result.
+   When we're done, we release it.
+
+   #include <stdio.h>
+   #include <unistd.h>
+   #include <gpioapi.h>
+
+   int main(int argc, char *argv[]){
+      int result, i;
+      gpio node;
+
+      if ((result = initGPIO(EXPANDER, 0, &node)) < 0){
+	 fprintf(stderr, "Error initializing gpio\n");
+	 return -1;
+      }
+
+      if ((result = setGPIO(&node, OUT, 1)) < 0){
+	 fprintf(stderr, "Error setting GPIO output high\n");
+	 return -1;
+      }
+
+      if ((result = setGPIO(&node, OUT, 0)) < 0){
+	 fprintf(stderr, "Error setting GPIO output low\n");
+	 return -1;
+      }
+
+      // The third parameter doesn't matter in this next call
+      if ((result = setGPIO(&node, IN, 0)) < 0){
+	 fprintf(stderr, "Error setting GPIO input\n");
+	 return -1;
+      }
+      for(i = 0; i < 10; i++){
+	 if ((result = readGPIO(&node)) < 0){
+	    fprintf(stderr, "Error reading from GPIO\n");
+	    return -1;
+	 }
+	 printf("%d - %c\n", result, result);
+	 sleep(1);
+      }
+   }
+
+   Example output from this program could be:
+   48 - 0
+   49 - 1
+   49 - 1
+   49 - 1
+   48 - 0
+   48 - 0
+   49 - 1
+   48 - 0
+   48 - 0
+   49 - 1
+

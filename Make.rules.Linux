@@ -1,0 +1,4 @@
+#CC=arm-linux-gcc
+SO_EXT=so
+SO_CFLAGS=-fPIC
+SO_LDFLAGS=-shared -fPIC -Wl,-soname,$(SO_NAME)
